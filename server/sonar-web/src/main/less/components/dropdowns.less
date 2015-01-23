@@ -102,10 +102,18 @@
 // Dropdown section headers
 .dropdown-header {
   display: block;
-  padding: 3px 20px;
-  font-size: @smallFontSize;
-  color: @baseFontColor;
+  padding: 3px 8px;
+  font-size: 11px;
+  color: @secondFontColor;
+  text-transform: uppercase;
   white-space: nowrap; // as with > li > a
+}
+
+.dropdown-menu .divider {
+  height: 1px;
+  margin: 9px 0;
+  overflow: hidden;
+  background-color: #e5e5e5;
 }
 
 // Backdrop to catch body clicks on mobile, etc.
