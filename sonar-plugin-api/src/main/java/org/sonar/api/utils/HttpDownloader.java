@@ -60,17 +60,17 @@ import java.util.zip.GZIPInputStream;
  * @since 2.2
  */
 public class HttpDownloader extends UriReader.SchemeProcessor implements BatchComponent, ServerComponent {
-  public static final int TIMEOUT_MILLISECONDS = 20 * 1000;
 
+  public static final int TIMEOUT_MILLISECONDS = 20 * 1000;
   private final BaseHttpDownloader downloader;
-  private final Integer readTimeout;
+  private Integer readTimeout;
 
   public HttpDownloader(Server server, Settings settings) {
     this(server, settings, null);
   }
 
   public HttpDownloader(Server server, Settings settings, @Nullable Integer readTimeout) {
-    this.readTimeout = readTimeout;
+    initReadTimeout(settings, readTimeout);
     downloader = new BaseHttpDownloader(settings.getProperties(), server.getVersion());
   }
 
@@ -79,9 +79,25 @@ public class HttpDownloader extends UriReader.SchemeProcessor implements BatchCo
   }
 
   public HttpDownloader(Settings settings, @Nullable Integer readTimeout) {
-    this.readTimeout = readTimeout;
+    initReadTimeout(settings, readTimeout);
     downloader = new BaseHttpDownloader(settings.getProperties(), null);
   }
+
+  private void initReadTimeout(Settings settings, @Nullable Integer newReadTimeout) {
+    if (newReadTimeout != null) {
+      this.readTimeout = newReadTimeout;
+    } else {
+      setTimeoutFromSettings(settings);
+    }
+  }
+
+  private void setTimeoutFromSettings(Settings settings) {
+    int timeOutFromSettings = settings.getInt("sonar.core.http.readTimeoutMillis");
+    if (timeOutFromSettings != 0) {
+      this.readTimeout = timeOutFromSettings;
+    }
+  }
+
 
   @Override
   String description(URI uri) {
@@ -151,8 +167,8 @@ public class HttpDownloader extends UriReader.SchemeProcessor implements BatchCo
     private static final String HTTP_PROXY_PASSWORD = "http.proxyPassword";
 
     private static final List<String> PROXY_SETTINGS = ImmutableList.of(
-      "http.proxyHost", "http.proxyPort", "http.nonProxyHosts",
-      "http.auth.ntlm.domain", "socksProxyHost", "socksProxyPort");
+            "http.proxyHost", "http.proxyPort", "http.nonProxyHosts",
+            "http.auth.ntlm.domain", "socksProxyHost", "socksProxyPort");
 
     private String userAgent;
 
@@ -196,8 +212,8 @@ public class HttpDownloader extends UriReader.SchemeProcessor implements BatchCo
 
     private void registerProxyCredentials(Map<String, String> settings) {
       Authenticator.setDefault(new ProxyAuthenticator(
-        settings.get(HTTP_PROXY_USER),
-        settings.get(HTTP_PROXY_PASSWORD)));
+              settings.get(HTTP_PROXY_USER),
+              settings.get(HTTP_PROXY_PASSWORD)));
     }
 
     private boolean requiresProxyAuthentication(Map<String, String> settings) {
