@@ -31,6 +31,7 @@ import com.google.common.io.InputSupplier;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.BatchComponent;
 import org.sonar.api.ServerComponent;
@@ -59,17 +60,19 @@ import java.util.zip.GZIPInputStream;
  * @since 2.2
  */
 public class HttpDownloader extends UriReader.SchemeProcessor implements BatchComponent, ServerComponent {
+  private static final Logger LOG = LoggerFactory.getLogger(HttpDownloader.class);
+
   public static final int TIMEOUT_MILLISECONDS = 20 * 1000;
 
   private final BaseHttpDownloader downloader;
-  private final Integer readTimeout;
+  private Integer readTimeout;
 
   public HttpDownloader(Server server, Settings settings) {
     this(server, settings, null);
   }
 
   public HttpDownloader(Server server, Settings settings, @Nullable Integer readTimeout) {
-    this.readTimeout = readTimeout;
+    initReadTimeout(settings, readTimeout);
     downloader = new BaseHttpDownloader(settings.getProperties(), server.getVersion());
   }
 
@@ -78,9 +81,26 @@ public class HttpDownloader extends UriReader.SchemeProcessor implements BatchCo
   }
 
   public HttpDownloader(Settings settings, @Nullable Integer readTimeout) {
-    this.readTimeout = readTimeout;
+    initReadTimeout(settings, readTimeout);
     downloader = new BaseHttpDownloader(settings.getProperties(), null);
   }
+
+  private void initReadTimeout(Settings settings, @Nullable Integer newReadTimeout) {
+    if (newReadTimeout != null) {
+      this.readTimeout = newReadTimeout;
+    } else {
+      setTimeoutFromSettings(settings);
+    }
+    LOG.debug("Http downloader initialized with read timeout: " + readTimeout + " ms.");
+  }
+
+  private void setTimeoutFromSettings(Settings settings) {
+    int timeOutFromSettings = settings.getInt("sonar.core.http.readTimeoutMillis");
+    if (timeOutFromSettings != 0) {
+      this.readTimeout = timeOutFromSettings;
+    }
+  }
+
 
   @Override
   String description(URI uri) {
